@@ -1,59 +1,387 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel 12 Contact Us Form with Admin Panel (Laravel Breeze Authentication)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## STEP 1: Install Laravel 12 
 
-## Learning Laravel
+If Laravel 12 is not installed, run:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+composer create-project laravel/laravel PHP_Laravel12_ContactUS_Form_Implement
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## STEP 2: Database Configuration
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Open `.env` file:
 
-### Premium Partners
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=Your database name
+DB_USERNAME=root
+DB_PASSWORD=root
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Explanation:  
+Connects Laravel application with MySQL database.
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## STEP 3: Create Migration (Contact Messages Table)
 
-## Code of Conduct
+```bash
+php artisan make:migration create_contact_messages_table --create=contact_messages
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```php
+Schema::create('contact_messages', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('last_name');
+    $table->string('email');
+    $table->string('mobile');
+    $table->text('message');
+    $table->timestamps();
+});
+```
 
-## Security Vulnerabilities
+Run migration:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan migrate
+```
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## STEP 4: Create Model
+
+```bash
+php artisan make:model ContactMessage
+```
+
+```php
+class ContactMessage extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'last_name',
+        'email',
+        'mobile',
+        'message',
+    ];
+}
+```
+
+---
+
+## STEP 5: Routes
+
+`routes/web.php`
+
+```php
+use App\Http\Controllers\ContactController;
+
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.form');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+Route::get('/admin/contacts', [ContactController::class, 'adminIndex'])->name('admin.contacts');
+
+require __DIR__.'/auth.php';
+```
+
+---
+
+## STEP 6: ContactController
+
+`app/Http/Controllers/ContactController.php`
+
+```php
+class ContactController extends Controller
+{
+    public function index()
+    {
+        return view('customer.contact');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => ['required','regex:/^[a-zA-Z\s]+$/'],
+            'last_name' => ['required','regex:/^[a-zA-Z\s]+$/'],
+            'email' => ['required','regex:/^[a-zA-Z0-9._%+-]+@gmail\.com$/'],
+            'mobile' => ['required','digits:10'],
+            'message' => ['required','min:5'],
+        ]);
+
+        ContactMessage::create($request->all());
+
+        return redirect()->back()->with('success','Message sent successfully!');
+    }
+
+    public function adminIndex(Request $request)
+    {
+        $messages = ContactMessage::latest()->paginate(4);
+        return view('admin.contacts.index', compact('messages'));
+    }
+}
+```
+
+---
+
+## STEP 7: Customer blade file create Contact View
+
+`resources/views/customer/contact.blade.php`
+
+```blade
+@extends('layouts.customer')
+
+@section('content')
+<div class="max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow">
+
+@if(session('success'))
+<div style="background-color:lightgreen;padding:20px;border-radius:6px;">
+{{ session('success') }}
+</div>
+@endif
+
+<form action="{{ route('contact.store') }}" method="POST">
+@csrf
+
+<input type="text" name="name" placeholder="Name" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')" class="w-full border p-2 mb-2">
+
+<input type="text" name="last_name" placeholder="Last Name" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')" class="w-full border p-2 mb-2">
+
+<input type="email" name="email" placeholder="example@gmail.com" class="w-full border p-2 mb-2">
+
+<input type="text" name="mobile" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full border p-2 mb-2">
+
+<textarea name="message" class="w-full border p-2 mb-2"></textarea>
+
+<button class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+</form>
+</div>
+@endsection
+```
+
+---
+
+## STEP 8: Admin create blade file for list all the data 
+
+`resources/views/admin/contacts/index.blade.php`
+
+```blade
+@extends('layouts.admin')
+
+@section('content')
+<table border="1" width="100%">
+<tr>
+<th>Name</th><th>Email</th><th>Mobile</th><th>Message</th><th>Date</th>
+</tr>
+@foreach($messages as $msg)
+<tr>
+<td>{{ $msg->name }}</td>
+<td>{{ $msg->email }}</td>
+<td>{{ $msg->mobile }}</td>
+<td>{{ $msg->message }}</td>
+<td>{{ $msg->created_at }}</td>
+</tr>
+@endforeach
+</table>
+
+{{ $messages->links() }}
+@endsection
+```
+
+---
+
+## STEP 9: create admin and customer Layout Files
+
+### Admin Layout  
+`resources/views/layouts/admin.blade.php`
+
+```blade
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    @vite('resources/css/app.css')
+</head>
+<body class="bg-gray-100">
+    @include('layouts.admin-navbar')  <!-- sirf admin ke liye navbar -->
+    <div class="py-6">
+        @yield('content')
+    </div>
+    @vite('resources/js/app.js')
+</body>
+</html>
+
+```
+
+### Customer Layout  
+`resources/views/layouts/customer.blade.php`
+
+```blade
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Panel</title>
+    @vite('resources/css/app.css')
+</head>
+<body class="bg-gray-50">
+    <div class="py-6">
+        @yield('content')
+    </div>
+    @vite('resources/js/app.js')
+</body>
+</html>
+
+```
+# Update navbar.blade.php and admin-navbarblade.php
+---
+`resources/views/layouts/navbar.blade.php`
+---
+```blade
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    @vite('resources/css/app.css')
+</head>
+<body class="bg-gray-100">
+    @include('layouts.admin-navbar')  <!-- sirf admin ke liye navbar -->
+    <div class="py-6">
+        @yield('content')
+    </div>
+    @vite('resources/js/app.js')
+</body>
+</html>
+```
+
+---
+`resources/views/layouts/admin-navbar.blade.php`
+---
+---
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="{{ route('dashboard') }}">
+                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.contacts')" :active="request()->routeIs('admin.contacts')">
+                        {{ __('Contact') }}
+                    </x-nav-link>
+                </div>
+            </div>
+
+            <!-- Settings Dropdown -->
+            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                @if(Auth::check())
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            <div>{{ Auth::user()->name }}</div>
+                            <div class="ms-1">
+                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Profile') }}
+                        </x-dropdown-link>
+
+                        <!-- Authentication -->
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-dropdown-link :href="route('logout')"
+                                onclick="event.preventDefault(); this.closest('form').submit();">
+                                {{ __('Log Out') }}
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
+                @endif
+            </div>
+
+            <!-- Hamburger -->
+            <div class="-me-2 flex items-center sm:hidden">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+
+---
+---
+
+## STEP 10: Install Laravel Breeze for admin login and registration (Existing Project)
+
+```bash
+composer require laravel/breeze --dev
+php artisan breeze:install
+npm install
+npm run build
+php artisan migrate
+```
+
+---
+
+## STEP 11: Run Project
+
+```bash
+php artisan serve
+```
+
+Visit:
+- http://127.0.0.1:8000/contact
+
+  <img width="979" height="362" alt="image" src="https://github.com/user-attachments/assets/008677f1-674b-4269-a906-2a944e2000ed" />
+
+- http://127.0.0.1:8000/admin/contacts
+
+<img width="355" height="378" alt="image" src="https://github.com/user-attachments/assets/c92c60f2-2b60-486f-abd7-58e7a09af6dd" />
+
+
+<img width="377" height="295" alt="image" src="https://github.com/user-attachments/assets/0b2a0745-786c-429d-bdc9-0752509dd77e" />
+
+
+<img width="628" height="201" alt="image" src="https://github.com/user-attachments/assets/8814acec-2fb6-4378-b554-f18c1bb1e8ad" />
+
+
+---
+
+ 
+
+---
+
