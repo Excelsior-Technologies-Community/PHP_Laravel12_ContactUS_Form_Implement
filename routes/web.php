@@ -40,7 +40,6 @@ Route::get(
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth'])->group(function () {
 
     /*
@@ -54,11 +53,38 @@ Route::middleware(['auth'])->group(function () {
         [ContactController::class, 'adminIndex']
     )->name('admin.contacts');
 
+    /*
+    |--------------------------------------------------------------------------
+    | CSV Export
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/admin/contacts/export/csv',
+        [ContactController::class, 'exportCsv']
+    )->name('admin.contacts.export');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk Delete
+    |--------------------------------------------------------------------------
+    */
+
+    Route::delete(
+        '/admin/contacts/bulk-delete',
+        [ContactController::class, 'bulkDelete']
+    )->name('admin.contacts.bulk-delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Show Contact
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/admin/contacts/{contact}',
         [ContactController::class, 'show']
     )->name('admin.contacts.show');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -70,7 +96,6 @@ Route::middleware(['auth'])->group(function () {
         '/admin/contacts/{contact}/status',
         [ContactController::class, 'updateStatus']
     )->name('admin.contacts.status');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -88,7 +113,6 @@ Route::middleware(['auth'])->group(function () {
         [ReplyController::class, 'destroy']
     )->name('admin.contacts.reply.destroy');
 
-
     /*
     |--------------------------------------------------------------------------
     | Internal Notes
@@ -105,7 +129,6 @@ Route::middleware(['auth'])->group(function () {
         [ContactNoteController::class, 'destroy']
     )->name('admin.contacts.note.destroy');
 });
-
 
 /*
 |--------------------------------------------------------------------------
