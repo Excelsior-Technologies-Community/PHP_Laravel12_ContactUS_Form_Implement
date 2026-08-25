@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class ContactMessage extends Model
 {
@@ -30,9 +30,20 @@ class ContactMessage extends Model
         return $this->hasMany(ContactReply::class);
     }
 
+    public function notes()
+    {
+        return $this->hasMany(ContactNote::class);
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(ContactActivity::class)
+            ->latest();
+    }
+
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'new' => 'blue',
             'read' => 'yellow',
             'replied' => 'green',
@@ -43,7 +54,7 @@ class ContactMessage extends Model
 
     public function getPriorityColorAttribute()
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'green',
             'medium' => 'yellow',
             'high' => 'orange',
